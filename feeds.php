@@ -1,6 +1,4 @@
 <?php
-//include "timeLog.php";
-//$timeLog = new timeLog();
 define("FEED_URL", "http://www.batoto.net/myfollows_rss?secret=");
 define("FEED_PARMS", "&l=English");
 define("CACHE_DIR", "cache");
@@ -77,7 +75,6 @@ function getData($url, $lifetime = 1800) {
 }
 
 libxml_use_internal_errors(true);
-//$timeLog->tick();
 $xml = simplexml_load_string(getData(FEED_URL . FEED_SECRET . FEED_PARMS));
 if (!$xml) {
 	echo $html_basic;
@@ -87,14 +84,12 @@ if (!$xml) {
     libxml_clear_errors();
 	exit;
 }
+
 $free_items = $xml->channel->item;
 $free_items_count = $xml->channel->item->count();
 $broken_items = array();
-//echo $free_items_count, PHP_EOL;
-$counter = 1;
-//$timeLog->tick();
+
 foreach($free_items as $key => $free_item) {
-	//$timeLog->tick();
 	$hashed = md5($free_item->link) . ".ok";
 	if ( file_exists(CACHE_DIR . "/" . $hashed) ) {
 		$http_links_status = true;
@@ -103,25 +98,15 @@ foreach($free_items as $key => $free_item) {
 		$data = getData($free_item->link, 3600);
 		if ( strpos($data, "id=\"comic_page\"") !== false ) {
 			$http_links_status = true;
-			file_put_contents(CACHE_DIR . "/" . $hashed, "");
 		} else {
 			$http_links_status = false;
-			$broken_items[] = $counter;
-			//$free_item->title = "N/A " . $free_item->title;
-			//$dom=dom_import_simplexml($free_item);
-			//$dom->parentNode->removeChild($dom);
-			/* NOPE, breaks loop query */
+			$broken_items[] = $free_item->link;
 		}
 	}
-	$color = ($http_links_status ? "85DD3C" : "B00000");
-	//printf("<span style=\"color: #%s\">%s</span><br>\n", $color, $free_item->link);
-	++$counter;
 }
 for($i=0,$size=count($broken_items);$i<$size;++$i) {
-	$find = "//channel/item[" . $broken_items[$i] . "]";
+	$find = "//channel/item[link='" . $broken_items[$i] . "']";
 	unset($xml->xpath($find)[0][0]);
 }
-//$timeLog->tick();
-//print_r($timeLog->getTimes());
 echo $xml->asXML();
 ?>
